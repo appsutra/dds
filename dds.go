@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/appsutra/dns-ddos-sutra/commands"
+	"github.com/appsutra/dds/commands"
 	"runtime"
 )
 

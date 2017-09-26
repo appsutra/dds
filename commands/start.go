@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"github.com/appsutra/dns-ddos-sutra/agent"
+	"github.com/appsutra/dds/agent"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"

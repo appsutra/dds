@@ -197,7 +197,6 @@ func (self *DDS) Init() {
 
 func (self *DDS) Start() chan error {
 	dns.HandleFunc(".", self.proxyServe)
-	defer dns.HandleRemove(".")
 
 	failure := make(chan error, 1)
 
@@ -215,7 +214,7 @@ func (self *DDS) Start() chan error {
 }
 
 func (self *DDS) Stop() {
-
+	dns.HandleRemove(".")
 }
 
 func generateReqKey(req *dns.Msg) string {
@@ -314,8 +313,6 @@ func (self *DDS) proxyServe(w dns.ResponseWriter, req *dns.Msg) {
 		cachedAns      []dns.RR
 		answers        []dns.RR
 		r              dns.RR
-		//clientIp       string
-		//clientPort     string
 	)
 
 	defer func() {
@@ -323,6 +320,7 @@ func (self *DDS) proxyServe(w dns.ResponseWriter, req *dns.Msg) {
 			fmt.Println(err)
 		}
 	}()
+	fmt.Printf("Received Req: %v\n", req.String())
 
 	/************************ FILTER REQUEST *************************/
 
@@ -396,25 +394,25 @@ func (self *DDS) proxyServe(w dns.ResponseWriter, req *dns.Msg) {
 			reason = fmt.Sprintf("Questions Doesn't match: %s %s", req.Question[0], m.Question[0])
 			invalidate = true
 
-		/* NOTE: We currently validate the cookie by regenerating the server cookie which is dependent
-		 *       on the client cookie
-		 *       It is assumed from a specific client the client cookie mast be same in consicutive req
-		 *       although the behaviour of the client cookie generation is not fully understood
-		 *       Currently the client cookie is fixed with a hex(24)
-		 */
+			/* NOTE: We currently validate the cookie by regenerating the server cookie which is dependent
+			 *       on the client cookie
+			 *       It is assumed from a specific client the client cookie mast be same in consicutive req
+			 *       although the behaviour of the client cookie generation is not fully understood
+			 *       Currently the client cookie is fixed with a hex(24)
+			 */
 
-		/* TODO: Check If cookie is not present although it was present in the initial req, it should
-		 *       be invalidated
-		 *
-		 *       In case no cookie support is revealed from client it will be enforced to have limited
-		 *       size otherwise force the remaining to communicate over TCP by sending back responses
-		 *       with the TC flag set
-		 */
-		case cookiePresent(req):
+			/* TODO: Check If cookie is not present although it was present in the initial req, it should
+			 *       be invalidated
+			 *
+			 *       In case no cookie support is revealed from client it will be enforced to have limited
+			 *       size otherwise force the remaining to communicate over TCP by sending back responses
+			 *       with the TC flag set
+			 */
+			/*case cookiePresent(req):
 			if !validCookie(req, w) {
 				reason = fmt.Sprintf("Invalid cookie provided")
 			}
-			invalidate = true
+			invalidate = true*/
 		}
 
 		if invalidate {
@@ -526,15 +524,16 @@ func (self *DDS) proxyServe(w dns.ResponseWriter, req *dns.Msg) {
 		 *       Although it is still not fully understood if the client is
 		 *       responsible for initiating edns cookies
 		 */
-		o := new(dns.OPT)
-		o.Hdr.Name = "."
-		o.Hdr.Rrtype = dns.TypeOPT
-		e := new(dns.EDNS0_COOKIE)
-		e.Code = dns.EDNS0COOKIE
-		e.Cookie = CLIENTDUMMYCOOKIE + generateServerCookie(CLIENTDUMMYCOOKIE, SERVERSECRET, strings.Split(w.RemoteAddr().String(), ":")[0])
-		o.Option = append(o.Option, e)
-		m.Extra = append(m.Extra, o)
-
+		/*
+			o := new(dns.OPT)
+			o.Hdr.Name = "."
+			o.Hdr.Rrtype = dns.TypeOPT
+			e := new(dns.EDNS0_COOKIE)
+			e.Code = dns.EDNS0COOKIE
+			e.Cookie = CLIENTDUMMYCOOKIE + generateServerCookie(CLIENTDUMMYCOOKIE, SERVERSECRET, strings.Split(w.RemoteAddr().String(), ":")[0])
+			o.Option = append(o.Option, e)
+			m.Extra = append(m.Extra, o)
+		*/
 		// If validation needed set the validation cache for future reference
 		if validationNeeded {
 			req.Question = questions

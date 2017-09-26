@@ -17,11 +17,16 @@ var startCmd = &cobra.Command{
 
 		shutdownChannel := makeShutdownChannel()
 
-		agent.Start()
-		fmt.Println("DDS started successfully...")
+		failure := agent.Start()
 
 		//we block on this channel
-		<-shutdownChannel
+		select {
+		case msg := <-shutdownChannel:
+			fmt.Println("Signal: ", msg)
+
+		case msg := <-failure:
+			fmt.Println(msg)
+		}
 
 		agent.Stop()
 
